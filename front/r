@@ -1,0 +1,4 @@
+#!/bin/bash
+
+npx vite --host 194.35.12.48 --port 9090
+
