@@ -49,14 +49,14 @@ export default {
 
     }
 
-    /**/
+    /*
     let pn = 1
     const carousel = async () => {
       pn = pn > 10 ? 1 : pn;
       this.model = await apiGet('/plant/' + pn);
       pn++;
     }
-    //setInterval(carousel,100);
+    setInterval(carousel,100); */
   },
 
 }
@@ -66,7 +66,7 @@ export default {
 
 <template>
       <header>
-        <div class="header-block"><el-input maxlength="5" v-model="view.rowLen" placeholder="Please input" /></div>
+        <div class="header-block"><el-input maxlength="2" v-model="view.rowLen" placeholder="Please input" /></div>
         <div class="header-block"><el-switch v-model="view.unlimColumnViewOn" /></div>
       </header>
       <main>

@@ -10,7 +10,7 @@ export default {
   props: {
     model: {
       type: Object,
-      default: {owner: 'Object model for CustomerPlant was not provided',},
+      default: {},
     },
     view: {
       type: Object,
@@ -25,11 +25,14 @@ export default {
 </script>
 
 <template>
-  <h1>Plant owns by {{model.owner}}</h1>
-  <el-row v-for="jbod in model.jbods">
-    <el-col :span="24"><RfabJbod :model="jbod" :view="view" /></el-col>
-  </el-row>
+  <div v-for="jbod in model.jbods">
+    <RfabJbod class="jbod" :model="jbod" :view="view" />
+  </div>
 </template>
 
 <style scoped>
+.jbod {
+  margin-bottom: 20px;
+}
+
 </style>

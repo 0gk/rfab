@@ -49,7 +49,7 @@ export default {
 <template>
 
     <div class="jbod">
-      <div><span class="title">WWN:&nbsp;{{model.wwn0}}:{{model.wwn1}} Model:&nbsp;{{model.mdl}} S/N:&nbsp;{{model.sn}}</span>
+      <div class="title-box"><span class="title">WWN:&nbsp;{{model.wwn0}}:{{model.wwn1}} Model:&nbsp;{{model.mdl}} S/N:&nbsp;{{model.sn}}</span>
       </div>
       <div class="line-container" v-if="view.unlimColumnViewOn" >
         <RfabSlot class="slot" v-for="slot in model.slots" :model="slot" />
@@ -66,21 +66,25 @@ export default {
 
 <style scoped>
 .title{
-    font-weight: normal;
-    font-size: 120%;
-    color: white;
-    align: center;
+  color: white;
+  font-weight: normal;
+  font-size: 120%;
 }
-.jbod {
-  background: #3b3d3c;
-  margin: 5px;
+.title-box{
+  text-align: center;
   padding: 5px;
 }
+.jbod {
+  background: #6b6d6c;
+  padding: 5px;
+  justify-content: center;
+}
 .line-container {
+  background: #3b3d3c;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: stretch;
 }
 .slot {
