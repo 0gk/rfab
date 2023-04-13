@@ -28,6 +28,7 @@ export default {
       return {
         background: '#3b3d3c',
         padding: '5px',
+        margin: 'auto',
         display: 'grid',
         width: 'fit-content',
         gridTemplateColumns: `repeat(${this.view.rowLen}, 420px)`,
