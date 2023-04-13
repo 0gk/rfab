@@ -14,7 +14,8 @@ export default {
       view: {
         unlimColumnViewOn: false,
 	rowLen: 4,
-      }
+      },
+      rowLengths: [1, 2, 4, 5, 8, 10],
     }
   },
 
@@ -66,7 +67,9 @@ export default {
 
 <template>
       <header>
-        <div class="header-block"><el-input maxlength="2" v-model="view.rowLen" placeholder="Please input" /></div>
+        <el-radio-group v-model="view.rowLen" size="large">
+          <el-radio-button v-for="i in rowLengths" :key="i" :label="i" />
+        </el-radio-group>
         <div class="header-block"><el-switch v-model="view.unlimColumnViewOn" /></div>
       </header>
       <main>

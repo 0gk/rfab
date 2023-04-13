@@ -24,21 +24,17 @@ export default {
   },
 
   computed: {
-    slotRows() {
-      let obj = this.model.slots
-      let lenght = Object.keys(obj).length
-      let rowLen = Number(this.view.rowLen) || 4 
-      let rowArr = [];
-      for (let i=0; i<lenght; i++) {
-        let colArr = [];
-        let border = i + rowLen < lenght ? i + rowLen : lenght;
-        for (; i <border; i++) {
-          colArr.push(obj[String(i)]);
-        }
-        rowArr.push(colArr)
-        i--;
+    gridStyle() { 
+      return {
+        background: '#3b3d3c',
+        padding: '5px',
+        display: 'grid',
+        width: 'fit-content',
+        gridTemplateColumns: `repeat(${this.view.rowLen}, 420px)`,
       }
-      return rowArr
+    },
+    jbodTitle() {
+      return `WWN: ${this.model.wwn0}:${this.model.wwn1} Model: ${this.model.mdl} S/N: ${this.model.sn}`
     },
   },
 
@@ -48,18 +44,20 @@ export default {
 
 <template>
 
-    <div class="jbod">
-      <div class="title-box"><span class="title">WWN:&nbsp;{{model.wwn0}}:{{model.wwn1}} Model:&nbsp;{{model.mdl}} S/N:&nbsp;{{model.sn}}</span>
-      </div>
-      <div class="line-container" v-if="view.unlimColumnViewOn" >
-        <RfabSlot class="slot" v-for="slot in model.slots" :model="slot" />
-      </div>
-      <div v-else >
-        <div class="line-container" v-for="slotRow in slotRows">
-          <RfabSlot class="slot" v-for="slot in slotRow" :model="slot" />
+      <div class="unit" :class="{'fit-content': !view.unlimColumnViewOn}">
+
+        <div class="title-box">
+          <span class="title">{{jbodTitle}}</span>
         </div>
+
+        <div v-if="view.unlimColumnViewOn" class="autogrid" >
+          <RfabSlot class="slot" v-for="slot in model.slots" :model="slot" />
+        </div>
+        <div v-else :style="gridStyle" >
+          <RfabSlot class="slot" v-for="slot in model.slots" :model="slot" />
+        </div>
+
       </div>
-    </div>
 
 </template>
 
@@ -74,18 +72,19 @@ export default {
   text-align: center;
   padding: 5px;
 }
-.jbod {
+.unit {
+  margin: auto;
   background: #6b6d6c;
-  padding: 5px;
-  justify-content: center;
+  padding: 10px;
 }
-.line-container {
+.fit-content {
+  width: fit-content;
+}
+.autogrid {
   background: #3b3d3c;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: stretch;
+  padding: 5px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 420px);
 }
 .slot {
   margin: 5px;
