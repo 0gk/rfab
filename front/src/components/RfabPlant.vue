@@ -25,15 +25,8 @@ export default {
 </script>
 
 <template>
-  <div class="container">
-    <RfabJbod class="jbod" v-for="jbod in model.jbods" :model="jbod" :view="view" />
-  </div>
+    <RfabJbod v-for="jbod in model.jbods" :model="jbod" :view="view" />
 </template>
 
 <style scoped>
-.jbod {
-  margin-bottom: 20px;
-}
-.container {
-}
 </style>
