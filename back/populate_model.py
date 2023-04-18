@@ -23,8 +23,9 @@ def slotgen(i: int) -> Slot:
     )  
 
 
-def jbodgen() -> Jbod:
+def jbodgen(i: int) -> Jbod:
     return Jbod(
+        idx = i,
         wwn0 = ''.join((random.choice(string.hexdigits) for i in range(16))),
         wwn1 = ''.join((random.choice(string.hexdigits) for i in range(16))),
         sasaddr = ''.join((random.choice(string.hexdigits) for i in range(16))),
@@ -41,5 +42,5 @@ def plantgen(pid: int) -> Plant:
     return Plant(
         pk = pid,
         owner='Owner with a stool', 
-        jbods={str(i): jbodgen() for i in range(JBODS_PER_PLANT)}
+        jbods={str(i): jbodgen(i) for i in range(JBODS_PER_PLANT)}
     )

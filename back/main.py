@@ -10,7 +10,7 @@ from sse_starlette.sse import EventSourceResponse
 from redis_om.model import NotFoundError
 import redis.asyncio as redis
 
-from rmodels import Plant, Jbod, Slot
+from rmodels import Plant, Jbod, Slot, SlotDetails
 from rdb import r
 from exceptions import RfabIncorrectDataFormat
 import settings as s
@@ -45,7 +45,6 @@ async def log(msg):
 async def reader(chName: str):
     async with r.pubsub() as pubsub:
         await pubsub.subscribe(chName,)
-        counter = 0
         while True:
             message = await pubsub.get_message(ignore_subscribe_messages=True)
             if message is not None:
@@ -147,7 +146,18 @@ async def sse(id: str):
     return EventSourceResponse(frontendUpdater(s.PLANT_UPDATE_CH_NAME, id))
 
 
-# This model needed only for /docs create right form
+class Action(BaseModel):
+    action: str
+    data: str
+
+
+@app.post('/action')
+async def publish(action: Action):
+    await r.publish(s.ACTION_CH_NAME, action.json())
+    return 'Action requested' 
+
+
+# This model needed only for /docs, for create correct input form
 class ModelUpdate(BaseModel):
     type: str
     id: str
@@ -157,7 +167,6 @@ class ModelUpdate(BaseModel):
 @app.post('/publish')
 async def publish(update: ModelUpdate, request: Request):
     update = await request.body()
-    print(update)
     await r.publish(s.PLANT_UPDATE_CH_NAME, update)
     return '-> published' 
 

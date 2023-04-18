@@ -68,7 +68,10 @@ class Slot(BaseEmbeddedJsonModel):
     itf: Interface 
     link: str #скорость интерфейсного линка
     grade: Grade 
-    details: SlotDetails
+    details: Optional[SlotDetails]
+
+    class Config:
+        fields = {'details': {'exclude': True},}
 
 
 class Jbod(BaseEmbeddedJsonModel):
@@ -78,6 +81,7 @@ class Jbod(BaseEmbeddedJsonModel):
         ONLINE = 1
         OFFLINE = 2
 
+    idx: int
     wwn0: str #16 ASCII HEX
     wwn1: str #(16 ASCII HE)
     sasaddr: str #(16 ASCII HEX
