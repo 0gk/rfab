@@ -22,14 +22,13 @@ class BaseJsonModel(JsonModel, ABC):
 
 
 class BaseEmbeddedJsonModel(EmbeddedJsonModel, ABC):
-
     class Config:
         fields = {'pk': {'exclude': True},}
 
 
 #mega-structure with passport details, SMART and so on, in separate JSON structure
 class SlotDetails(BaseEmbeddedJsonModel):
-    content: str
+    content: Optional[str]
 
 
 class Slot(BaseEmbeddedJsonModel):
@@ -70,9 +69,6 @@ class Slot(BaseEmbeddedJsonModel):
     grade: Grade 
     details: Optional[SlotDetails]
 
-    class Config:
-        fields = {'details': {'exclude': True},}
-
 
 class Jbod(BaseEmbeddedJsonModel):
 
@@ -95,6 +91,7 @@ class Jbod(BaseEmbeddedJsonModel):
     @property
     def wwn():
         return f'{self.wwn0}:{self.wwn1}'
+
 
 class Plant(BaseJsonModel):
     owner: Optional[str]

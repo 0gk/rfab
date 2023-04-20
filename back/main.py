@@ -5,12 +5,13 @@ import json
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
 from redis_om.model import NotFoundError
 import redis.asyncio as redis
 
-from rmodels import Plant, Jbod, Slot, SlotDetails
+from rmodels import Plant, Jbod, Slot, SlotDetails 
 from rdb import r
 from exceptions import RfabIncorrectDataFormat
 import settings as s
@@ -139,6 +140,16 @@ async def getPlant(id: str):
     except NotFoundError:
         raise HTTPException(status_code=404, detail=f'No plant {id=} found')
     return plant
+
+
+@app.get('/slotdetails/{plant_id}/{jbod_idx}/{slot_idx}')
+async def getSlotDetails(plant_id: str, jbod_idx: str, slot_idx: str):
+    try:
+        details_json = await r.execute_command('JSON.GET', f'rfab:plant:{plant_id}', f'.jbods.{jbod_idx}.slots.{slot_idx}.details')
+        details = SlotDetails.parse_raw(details_json)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail=f'No slot details {plant_id}/{jbod_idx}/{slot_idx} found')
+    return JSONResponse(content=details_json)
 
 
 @app.get('/sse/{id}')
