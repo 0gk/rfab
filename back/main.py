@@ -34,12 +34,12 @@ app.add_middleware(
 
 async def logErr(msg):
     print(f'ERROR: {msg}')
-    await r.publish(s.ERROR_CH_NAME, f'ERROR: {msg}')
+    await r.publish(s.REDIS_ERROR_CH_NAME, f'ERROR: {msg}')
 
 
 async def log(msg):
     print(msg)
-    await r.publish(s.LOG_CH_NAME, f'{msg}')
+    await r.publish(s.REDIS_LOG_CH_NAME, f'{msg}')
 
 
 # Async reader from redis channel
@@ -55,15 +55,24 @@ async def reader(chName: str):
                     await logErr(em) # Bubbling an exception outside the loop will break it 
 
 
-async def frontendUpdater(chName: str, plid: str):
+# Async reader from channels, matching the pattern
+async def preader(chNamePattern: str):
+    async with r.pubsub() as pubsub:
+        await pubsub.psubscribe(chNamePattern,)
+        while True:
+            message = await pubsub.get_message(ignore_subscribe_messages=True)
+            if message is not None:
+                try:
+                    yield message['channel'], json.loads(message['data'])
+                except json.decoder.JSONDecodeError as em:
+                    await logErr(em) # Bubbling an exception outside the loop will break it 
+
+
+async def frontendUpdater(plid: str):
     counter = 0
-    async for updateData in reader(chName):
-        try:
-            if plid == updateData['plid']:
-                counter += 1
-                yield {'event': 'message', 'data': json.dumps({'type': updateData['type'], 'data': updateData['data']}), 'id': counter}
-        except KeyError as em:
-            await logErr(f'No key {em} in message found')
+    async for updateData in reader(f'{s.REDIS_PLANT_UPDATE_CH_PREFIX}:{plid}'):
+        counter += 1
+        yield {'event': 'message', 'data': json.dumps({'type': updateData['type'], 'data': updateData['data']}), 'id': counter}
 
 
 # https://fastapi.tiangolo.com/tutorial/body-updates/#partial-updates-with-patch
@@ -82,26 +91,40 @@ def updateModel(model: Union[Plant, Jbod, Slot], newData: Dict[str, Any]):
 
 
 # Updates model based on redis channel updates
-async def modelUpdater(chName: str):
-    async for newData in reader(chName):
+async def modelUpdater(chNamePattern: str):
+    async for chName, newData in preader(chNamePattern):
         try:
+            plid = chName.split(':')[-1]
             if newData['type'] == 'state':
                 plant = Plant.parse_obj(newData['data'])
-                plant.pk = newData['plid'] 
+                plant.pk = plid
                 plant.save()
             elif newData['type'] == 'update':
                 try:
-                    plant = Plant.get(newData['plid'])
+                    plant = Plant.get(plid)
                     updateModel(plant, newData['data'])
                     plant.save()
                 except NotFoundError:
-                    raise RfabIncorrectDataFormat(f'Plant {newData["plid"]} not found in DB')
+                    raise RfabIncorrectDataFormat(f'Appropriate plant for cannel {chName=} {plid=} not found in DB')
+            elif newData['type'] == 'jbodstat':
+                for jbod_idx in newData['data']:
+                    jbodstat_str = json.dumps(newData['data'][jbod_idx])
+                    await r.hset(f'{s.REDIS_JBOD_STAT_KEY_PREFIX}:{plid}', jbod_idx, jbodstat_str)
+            elif newData['type'] == 'dutinfo':
+                for jbod_idx in newData['data']:
+                    for slot_idx in newData['data'][jbod_idx]:
+                        dutinfo_str = json.dumps(newData['data'][jbod_idx][slot_idx])
+                        await r.hset(f'{s.REDIS_DUT_INFO_KEY_PREFIX}:{plid}', f'{jbod_idx}:{slot_idx}', dutinfo_str)
             else:
                 raise RfabIncorrectDataFormat('Incorrect data type')
+
         except RfabIncorrectDataFormat as em:
             await logErr(f'{em}')
         except KeyError as em:
             await logErr(f'No key {em} in message found')
+
+
+# === STARTUP AND SHUTDOWN ============================================
 
 
 @app.on_event('startup')
@@ -116,7 +139,7 @@ async def startup():
     )
 
     # Run update state from channels
-    asyncio.create_task(modelUpdater(s.PLANT_UPDATE_CH_NAME))
+    asyncio.create_task(modelUpdater(s.REDIS_PLANT_UPDATE_CH_PREFIX + '*'))
 
     await log('STARTED')
 
@@ -126,6 +149,9 @@ async def shutdown():
     await r.close()
 
     await log('STOPPED')
+
+
+# === ROUTES =============================================
 
 
 @app.get('/')
@@ -142,19 +168,27 @@ async def getPlant(plid: str):
     return plant
 
 
-#@app.get('/slotdetails/{plid}/{jbod_idx}/{slot_idx}')
-#async def getSlotDetails(plid: str, jbod_idx: str, slot_idx: str):
-#    try:
-#        details_json = await r.execute_command('JSON.GET', f'rfab:plant:{plid}', f'.jbods.{jbod_idx}.slots.{slot_idx}.details')
-#        details = SlotDetails.parse_raw(details_json)
-#    except NotFoundError:
-#        raise HTTPException(status_code=404, detail=f'No slot details {plid}/{jbod_idx}/{slot_idx} found')
-#    return JSONResponse(content=details_json)
-
-
 @app.get('/sse/{plid}')
 async def sse(plid: str):
-    return EventSourceResponse(frontendUpdater(s.PLANT_UPDATE_CH_NAME, plid))
+    return EventSourceResponse(frontendUpdater(plid))
+
+
+@app.get('/jbodstat/{plid}/{jbod_idx}')
+async def getJbodStat(plid: str, jbod_idx: str):
+    try:
+        stat_json = await r.hget(f'{s.REDIS_JBOD_STAT_KEY_PREFIX}:{plid}', jbod_idx)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail=f'No jbod stat for {plid}/{jbod_idx} found')
+    return JSONResponse(content=stat_json)
+
+
+@app.get('/dutinfo/{plid}/{jbod_idx}/{slot_idx}')
+async def getDutInfo(plid: str, jbod_idx: str, slot_idx: str):
+    try:
+        info_json = await r.hget(f'{s.REDIS_DUT_INFO_KEY_PREFIX}:{plid}', f'{jbod_idx}:{slot_idx}')
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail=f'No dut info for {plid}/{jbod_idx}/{slot_idx} found')
+    return JSONResponse(content=info_json)
 
 
 class Action(BaseModel):
@@ -164,7 +198,7 @@ class Action(BaseModel):
 
 @app.post('/action')
 async def publish(action: Action):
-    await r.publish(s.ACTION_CH_NAME, action.json())
+    await r.publish(s.REDIS_ACTION_CH_NAME, action.json())
     return 'Action requested' 
 
 
@@ -178,5 +212,5 @@ class ModelUpdate(BaseModel):
 @app.post('/publish')
 async def publish(update: ModelUpdate, request: Request):
     update = await request.body()
-    await r.publish(s.PLANT_UPDATE_CH_NAME, update)
+    await r.publish(f'{s.REDIS_PLANT_UPDATE_CH_PREFIX}:1', update)
     return '-> published' 

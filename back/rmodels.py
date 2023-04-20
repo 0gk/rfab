@@ -5,18 +5,20 @@ from abc import ABC
 from redis_om import get_redis_connection, EmbeddedJsonModel, JsonModel, Field, Migrator
 
 import settings as s
+from rdb import r
 
-redis = get_redis_connection(
-    host = s.REIDS_HOST,
-    port = s.REIDS_PORT,
-    #password='lksjdflkmsaclkasuoirwjaoifdewu798432u09ei3domsadr8=====>jflsamfoiweuyrosiajowau82098570',
-    #decode_responses=True,
-)
+#redis = get_redis_connection(
+#    host = s.REIDS_HOST,
+#    port = s.REIDS_PORT,
+#    #password='lksjdflkmsaclkasuoirwjaoifdewu798432u09ei3domsadr8=====>jflsamfoiweuyrosiajowau82098570',
+#    #decode_responses=True,
+#)
+
 
 class BaseJsonModel(JsonModel, ABC):
     class Meta:
-        global_key_prefix = s.REDIS_OM_GLOBAL_KEY_PREFIX
-        database = redis
+        global_key_prefix = s.REDIS_RFAB_GLOBAL_KEY_PREFIX
+        database = r
 
     # Cant hide pk from responce  through "class Config fields" because bug when get models from DB appiars - the key in the model received does not match the key in the database. Seems just new key generated each time. 
 
@@ -25,6 +27,7 @@ class BaseEmbeddedJsonModel(EmbeddedJsonModel, ABC):
     class Config:
         fields = {'pk': {'exclude': True},}
 
+# = STATE =============================================
 
 class Slot(BaseEmbeddedJsonModel):
 
@@ -95,7 +98,7 @@ class Plant(BaseJsonModel):
         fields = {'pk': {'default:': None},}
 
     class Meta:
-        model_key_prefix = 'plant'
+        model_key_prefix = s.REDIS_OM_PLANT_MODEL_KEY_PREFIX 
 
 
 Migrator().run()
