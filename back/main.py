@@ -11,7 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from redis_om.model import NotFoundError
 import redis.asyncio as redis
 
-from rmodels import Plant, Jbod, Slot, SlotDetails 
+from rmodels import Plant, Jbod, Slot 
 from rdb import r
 from exceptions import RfabIncorrectDataFormat
 import settings as s
@@ -55,11 +55,11 @@ async def reader(chName: str):
                     await logErr(em) # Bubbling an exception outside the loop will break it 
 
 
-async def frontendUpdater(chName: str, plant_id: str):
+async def frontendUpdater(chName: str, plid: str):
     counter = 0
     async for updateData in reader(chName):
         try:
-            if plant_id == updateData['id']:
+            if plid == updateData['plid']:
                 counter += 1
                 yield {'event': 'message', 'data': json.dumps({'type': updateData['type'], 'data': updateData['data']}), 'id': counter}
         except KeyError as em:
@@ -87,15 +87,15 @@ async def modelUpdater(chName: str):
         try:
             if newData['type'] == 'state':
                 plant = Plant.parse_obj(newData['data'])
-                plant.pk = newData['id'] 
+                plant.pk = newData['plid'] 
                 plant.save()
             elif newData['type'] == 'update':
                 try:
-                    plant = Plant.get(newData['id'])
+                    plant = Plant.get(newData['plid'])
                     updateModel(plant, newData['data'])
                     plant.save()
                 except NotFoundError:
-                    raise RfabIncorrectDataFormat(f'Plant {newData["id"]} not found in DB')
+                    raise RfabIncorrectDataFormat(f'Plant {newData["plid"]} not found in DB')
             else:
                 raise RfabIncorrectDataFormat('Incorrect data type')
         except RfabIncorrectDataFormat as em:
@@ -133,28 +133,28 @@ async def root():
     return {'message': 'What are you fumbling around here?'}
 
 
-@app.get('/plant/{id}', response_model = Plant, response_model_exclude={'pk'}) # Things like this: response_model_exclude={'pk': True, 'jbods': {'__all__': {'pk',}}} sutable only for nested sets, lists or tuples, not for tested dicts
-async def getPlant(id: str):
+@app.get('/plant/{plid}', response_model = Plant, response_model_exclude={'pk'}) # Things like this: response_model_exclude={'pk': True, 'jbods': {'__all__': {'pk',}}} sutable only for nested sets, lists or tuples, not for tested dicts
+async def getPlant(plid: str):
     try:
-        plant = Plant.get(id)
+        plant = Plant.get(plid)
     except NotFoundError:
-        raise HTTPException(status_code=404, detail=f'No plant {id=} found')
+        raise HTTPException(status_code=404, detail=f'No plant {plid=} found')
     return plant
 
 
-@app.get('/slotdetails/{plant_id}/{jbod_idx}/{slot_idx}')
-async def getSlotDetails(plant_id: str, jbod_idx: str, slot_idx: str):
-    try:
-        details_json = await r.execute_command('JSON.GET', f'rfab:plant:{plant_id}', f'.jbods.{jbod_idx}.slots.{slot_idx}.details')
-        details = SlotDetails.parse_raw(details_json)
-    except NotFoundError:
-        raise HTTPException(status_code=404, detail=f'No slot details {plant_id}/{jbod_idx}/{slot_idx} found')
-    return JSONResponse(content=details_json)
+#@app.get('/slotdetails/{plid}/{jbod_idx}/{slot_idx}')
+#async def getSlotDetails(plid: str, jbod_idx: str, slot_idx: str):
+#    try:
+#        details_json = await r.execute_command('JSON.GET', f'rfab:plant:{plid}', f'.jbods.{jbod_idx}.slots.{slot_idx}.details')
+#        details = SlotDetails.parse_raw(details_json)
+#    except NotFoundError:
+#        raise HTTPException(status_code=404, detail=f'No slot details {plid}/{jbod_idx}/{slot_idx} found')
+#    return JSONResponse(content=details_json)
 
 
-@app.get('/sse/{id}')
-async def sse(id: str):
-    return EventSourceResponse(frontendUpdater(s.PLANT_UPDATE_CH_NAME, id))
+@app.get('/sse/{plid}')
+async def sse(plid: str):
+    return EventSourceResponse(frontendUpdater(s.PLANT_UPDATE_CH_NAME, plid))
 
 
 class Action(BaseModel):
@@ -171,7 +171,7 @@ async def publish(action: Action):
 # This model needed only for /docs, for create correct input form
 class ModelUpdate(BaseModel):
     type: str
-    id: str
+    plid: str
     data: Dict[str, Plant]
 
 
@@ -180,12 +180,3 @@ async def publish(update: ModelUpdate, request: Request):
     update = await request.body()
     await r.publish(s.PLANT_UPDATE_CH_NAME, update)
     return '-> published' 
-
-
-#@app.patch("/plant/update/{pk}")
-#async def updatePlant(pk: str, newData: Dict[str, Any]):
-#    plant = Plant.get(pk)
-#    updateModel(plant, newData)
-#    plant.save()
-#    return plant
-

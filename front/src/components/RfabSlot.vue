@@ -7,6 +7,10 @@ export default {
       type: Object,
       default: {},
     },
+    isSelected: {
+      type: Boolean,
+      default: false,
+    },
   },
 
   data() {
@@ -16,7 +20,7 @@ export default {
 </script>
 
 <template>
-  <div class="slot">
+  <div class="slot" :class="{'slot-selected': isSelected}">
       <div class="row1">({{model.idx}})&nbsp;{{model.sn}}&nbsp;|&nbsp;{{model.mdl}}</div>
       <div class="row2">{{model.status}}</div>
       <div class="row3">

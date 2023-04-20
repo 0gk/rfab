@@ -26,11 +26,6 @@ class BaseEmbeddedJsonModel(EmbeddedJsonModel, ABC):
         fields = {'pk': {'exclude': True},}
 
 
-#mega-structure with passport details, SMART and so on, in separate JSON structure
-class SlotDetails(BaseEmbeddedJsonModel):
-    content: Optional[str]
-
-
 class Slot(BaseEmbeddedJsonModel):
 
     class State(Enum):
@@ -67,7 +62,6 @@ class Slot(BaseEmbeddedJsonModel):
     itf: Interface 
     link: str #скорость интерфейсного линка
     grade: Grade 
-    details: Optional[SlotDetails]
 
 
 class Jbod(BaseEmbeddedJsonModel):

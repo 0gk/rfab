@@ -12,7 +12,7 @@ export default {
     return {
       model: {},
       view: {
-        unlimColumnViewOn: false,
+        isUnlimColumnViewOn: false,
 	rowLen: 4,
       },
       rowLengths: [1, 2, 4, 5, 8, 10],
@@ -70,7 +70,7 @@ export default {
         <el-radio-group v-model="view.rowLen" size="large">
           <el-radio-button v-for="i in rowLengths" :key="i" :label="i" />
         </el-radio-group>
-        <div class="header-block"><el-switch v-model="view.unlimColumnViewOn" /></div>
+        <div class="header-block"><el-switch v-model="view.isUnlimColumnViewOn" /></div>
       </header>
       <main>
         <RfabPlant :model="this.model" :view="view"/>

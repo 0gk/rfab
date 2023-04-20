@@ -1,7 +1,7 @@
 import random
 import string
 
-from rmodels import Plant, Jbod, Slot, SlotDetails
+from rmodels import Plant, Jbod, Slot
 
 JBODS_PER_PLANT = 5
 SLOTS_PER_JBOD = 16 
@@ -19,7 +19,6 @@ def slotgen(i: int) -> Slot:
         itf = Slot.Interface.SAS,
         link = 100500,
         grade = Slot.Grade.HIGH,
-        details = SlotDetails(content='Additional information in JSON format')
     )  
 
 
