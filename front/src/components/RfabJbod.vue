@@ -1,5 +1,6 @@
 <script>
 import RfabSlot from './RfabSlot.vue'
+import {apiPost} from '../api.js'
 
 export default {
 
@@ -24,6 +25,11 @@ export default {
       selectedSlotsIdx: new Set(), 
       isSelectModeOn: false,
       slotDetails: null,
+      actionsList: [
+        {value: "abort", label: "Abort"},
+        {value: "reset", label: "Reset"},
+      ],
+      chosenAction: '',
     }
   },
 
@@ -70,6 +76,17 @@ export default {
       this.slotDetails = null
     },
 
+    sendAction() {
+      if (this.chosenAction) {
+        apiPost('/action/1', {action: this.chosenAction, data: { [this.model.idx]: this.selectedSlotsIdx } })
+        var msg = `Action "${this.chosenAction}" was sent`;
+	this.chosenAction = "";
+      } else {
+        var msg = `Choose action to sent`;
+      }
+      console.log(msg);
+    },
+
   },
 
 }
@@ -84,9 +101,24 @@ export default {
 	  <div class="title">
             {{jbodTitle}}
 	  </div>
-	  <div>
-	    <el-switch v-model="isSelectModeOn" @change="onSelectModeChange" />
-	  </div>
+	  <div class="controls">
+	    <div class="switch">
+	      <el-switch v-model="isSelectModeOn" @change="onSelectModeChange" />
+	    </div>
+	    <div class="select">
+	      <el-select v-model="chosenAction" class="m-2" placeholder="Action">
+                <el-option
+                  v-for="action in actionsList"
+                  :key="action.value"
+                  :label="action.label"
+                  :value="action.value"
+                />
+              </el-select>
+	    </div>
+	    <div class="button">
+              <el-button type="primary" plain @click="sendAction">Send</el-button> 
+	    </div>
+          </div>
         </div>
 
 
@@ -97,8 +129,8 @@ export default {
           <RfabSlot class="slot" v-for="slot in model.slots" :model="slot" :is-selected="selectedSlotsIdx.has(slot.idx)"  @click="onClickSlot(slot.idx)"/>
         </div>
 
-        <div class="slot-details-box" v-if="slotDetails">
-	  <div class="slot-details" v-if="slotDetails.waitingText">{{slotDetails.waitingText}}</div>
+        <div class="dutinfo-box" v-if="slotDetails">
+	  <pre class="dutinfo" v-if="slotDetails.waitingText">{{slotDetails.waitingText}}</pre>
         </div>
 
       </div>
@@ -115,5 +147,4 @@ export default {
 .fit-content {
   width: fit-content;
 }
-
 </style>

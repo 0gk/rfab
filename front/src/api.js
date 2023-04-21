@@ -20,16 +20,15 @@ export async function apiGet(url) {
 };
 
 
-/*
-function displayMessage(message, type='info') {
-//  this.$notify({ message: message, type: type});
-  if (type === 'success') {
-    console.log('%c' + message, 'color: green');
-  } else if (type === 'error') {
-    console.error(message);
-  } else {
-   console.log(message);
-  };
+export async function apiPost(url, body_json) {
+  try {
+    console.log(`apiPost ${url}`);
+    const response = await server.post(url, body_json);
+    console.log('%c Sent:', 'color: green');
+    console.log(body_json);
+    return response.data;
+  } catch (error) {
+    console.error(error);
+  }
 };
 
-*/

@@ -191,14 +191,10 @@ async def getDutInfo(plid: str, jbod_idx: str, slot_idx: str):
     return JSONResponse(content=info_json)
 
 
-class Action(BaseModel):
-    action: str
-    data: str
-
-
-@app.post('/action')
-async def publish(action: Action):
-    await r.publish(s.REDIS_ACTION_CH_NAME, action.json())
+@app.post('/action/{plid}')
+async def publish(plid: str, request: Request):
+    action = await request.body()
+    await r.publish(f'{s.REDIS_ACTION_CH_PREFIX}:{plid}', action)
     return 'Action requested' 
 
 
