@@ -91,7 +91,9 @@ class Jbod(BaseEmbeddedJsonModel):
 
 
 class Plant(BaseJsonModel):
-    owner: Optional[str]
+    name: Optional[str]
+    testoptions: Dict[int, str]
+    chosentest: int
     jbods: Optional[Dict[str, Jbod]]
 
     class Config:

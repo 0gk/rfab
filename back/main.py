@@ -9,10 +9,9 @@ from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
 from redis_om.model import NotFoundError
-import redis.asyncio as redis
 
 from rmodels import Plant, Jbod, Slot 
-from rdb import r
+from rdb import r, rInit
 from exceptions import RfabIncorrectDataFormat
 import settings as s
 
@@ -130,13 +129,7 @@ async def modelUpdater(chNamePattern: str):
 @app.on_event('startup')
 async def startup():
     global r
-    #r = redis.from_url(s.REDIS_URL)
-    r = redis.Redis(
-            host=s.REIDS_HOST,
-            port=s.REIDS_PORT,
-            db=0,
-            decode_responses=True
-    )
+    r = await rInit() 
 
     # Run update state from channels
     asyncio.create_task(modelUpdater(s.REDIS_PLANT_UPDATE_CH_PREFIX + '*'))
@@ -201,8 +194,7 @@ async def publish(plid: str, request: Request):
 # This model needed only for /docs, for create correct input form
 class ModelUpdate(BaseModel):
     type: str
-    plid: str
-    data: Dict[str, Plant]
+    data: Plant
 
 
 @app.post('/publish')

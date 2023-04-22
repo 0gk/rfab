@@ -1,5 +1,6 @@
 <script>
 import RfabSlot from './RfabSlot.vue'
+import {apiGet} from '../api.js'
 import {apiPost} from '../api.js'
 
 export default {
@@ -24,12 +25,13 @@ export default {
     return {
       selectedSlotsIdx: new Set(), 
       isSelectModeOn: false,
-      slotDetails: null,
+      dutinfo: null,
+      jbodstat: null,
       actionsList: [
         {value: "abort", label: "Abort"},
         {value: "reset", label: "Reset"},
       ],
-      chosenAction: '',
+      chosenAction: null,
     }
   },
 
@@ -48,7 +50,7 @@ export default {
 
   methods: {
 
-    onClickSlot(idx) {
+    async onClickSlot(idx) {
       if (this.isSelectModeOn) {
 
         if (this.selectedSlotsIdx.has(idx)) {
@@ -61,30 +63,48 @@ export default {
 
         if (this.selectedSlotsIdx.has(idx)) {
 	  this.selectedSlotsIdx.clear();
-          this.slotDetails = null
+          this.dutinfo = null;
         } else {
 	  this.selectedSlotsIdx.clear();
           this.selectedSlotsIdx.add(idx);
-          this.slotDetails = { waitingText: "Loading ..." }
+          this.dutinfo = 'Loading ...';
+          try {
+	    this.dutinfo = await apiGet(`/dutinfo/${window.plid}/${this.model.idx}/${idx}`);
+          } catch (error) {
+            this.displayMessage(`${error.message} while requesting about selected slot #${idx}`, 'error');
+          }
         }
 
       }
     },
 
-    onSelectModeChange() {
-      this.selectedSlotsIdx.clear()
-      this.slotDetails = null
+    async onClickJbodTitle() {
+      if (this.jbodstat) {
+        this.jbodstat = null;
+      } else {
+        this.jbodstat = 'Loading ...';
+        try {
+          this.jbodstat = await apiGet(`/jbodstat/${window.plid}/${this.model.idx}`);
+        } catch (error) {
+          this.displayMessage(`${error.message} while requesting statistic for jbod #${this.model.idx}`, 'error');
+        }
+      }
     },
 
-    sendAction() {
-      if (this.chosenAction) {
-        apiPost('/action/1', {action: this.chosenAction, data: { [this.model.idx]: this.selectedSlotsIdx } })
-        var msg = `Action "${this.chosenAction}" was sent`;
-	this.chosenAction = "";
-      } else {
-        var msg = `Choose action to sent`;
+    onSelectModeChange() {
+      this.selectedSlotsIdx.clear()
+      this.dutinfo = null
+    },
+
+    async sendAction() {
+      try {
+        await apiPost('/action/' + window.plid, {action: this.chosenAction, data: { [this.model.idx]: Array.from(this.selectedSlotsIdx) } })
+        this.displayMessage(`Action "${this.chosenAction}" was sent`, 'success');
+        this.chosenAction = null;
+        this.selectedSlotsIdx = new Set();
+      } catch (error) {
+        this.displayMessage(`${error.message} while trying to dispatch action "${this.chosenAction}"`, 'error');
       }
-      console.log(msg);
     },
 
   },
@@ -98,7 +118,7 @@ export default {
       <div class="jbod" :class="{'fit-content': !view.isUnlimColumnViewOn}">
 
         <div class="title-box">
-	  <div class="title">
+	  <div class="title" @click="onClickJbodTitle">
             {{jbodTitle}}
 	  </div>
 	  <div class="controls">
@@ -115,10 +135,14 @@ export default {
                 />
               </el-select>
 	    </div>
-	    <div class="button">
-              <el-button type="primary" plain @click="sendAction">Send</el-button> 
+	    <div class="button" >
+              <el-button type="primary" plain @click="sendAction" :disabled="!chosenAction || this.selectedSlotsIdx.size == 0">Send</el-button> 
 	    </div>
           </div>
+        </div>
+
+        <div class="jbodstat-box" v-if="jbodstat">
+	  <pre class="jbodstat" >{{jbodstat}}</pre>
         </div>
 
 
@@ -129,8 +153,8 @@ export default {
           <RfabSlot class="slot" v-for="slot in model.slots" :model="slot" :is-selected="selectedSlotsIdx.has(slot.idx)"  @click="onClickSlot(slot.idx)"/>
         </div>
 
-        <div class="dutinfo-box" v-if="slotDetails">
-	  <pre class="dutinfo" v-if="slotDetails.waitingText">{{slotDetails.waitingText}}</pre>
+        <div class="dutinfo-box" v-if="dutinfo">
+	  <pre class="dutinfo" >{{dutinfo}}</pre>
         </div>
 
       </div>

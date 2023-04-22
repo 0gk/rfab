@@ -7,9 +7,14 @@ import 'element-plus/dist/index.css'
 
 import './style.css'
 import App from './App.vue'
+import GlobalMixin from './globalmixin.js'
 
-const app = createApp(App)
+const app = createApp(App);
 
-app.use(ElementPlus)
+app.use(ElementPlus);
 
-app.mount('#app')
+app.mixin(GlobalMixin)
+
+// app.config.globalProperties.$plid = null; 
+
+app.mount('#app');

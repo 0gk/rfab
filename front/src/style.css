@@ -3,6 +3,30 @@ body {
   font-family: "Courier";
 }
 
+.plant > .panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #3b3d3c;
+  padding: 5px 20px 5px 20px;
+  margin: 20px 5px 20px 5px;
+}
+.plant > .panel > .chosentest {
+  color: white;
+  font-weight: normal;
+  font-size: 120%;
+}
+.plant > .panel > .controls {
+  display: flex;
+  justify-content: flex-start;
+  padding: 5px;
+  margin: 5px;
+}
+.plant > .panel > .controls > .select {
+  width: 120px;
+}
+.plant > .panel > .controls > .button {}
+
 
 .jbod {
   margin: auto;
@@ -37,6 +61,17 @@ body {
   width: 90px;
 }
 .jbod > .title-box > .controls > .button {}
+.jbod > .jbodstat-box {
+  border-bottom: 10px solid var(--jbod-color);
+  background: white;
+}
+.jbod > .jbodstat-box > .jbodstat {
+  margin-top: 0px;
+  padding-top: 0px;
+  padding-left: 10px;
+  margin-bottom: 0px;
+  padding-bottom: 10px;
+}
 .jbod > .grid {
   display: grid;
   background: #3b3d3c;
@@ -50,9 +85,9 @@ body {
 .jbod > .dutinfo-box > .dutinfo {
   margin-top: 0px;
   padding-top: 0px;
-  padding-left: 5px;
+  padding-left: 10px;
   margin-bottom: 0px;
-  padding-bottom: 0px;
+  padding-bottom: 10px;
 }
 
 

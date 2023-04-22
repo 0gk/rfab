@@ -20,7 +20,14 @@ export default {
   },
 
   async created() {
-    this.model = await apiGet('/plant/1');
+
+    window.plid = 1;
+
+    try {
+      this.model = await apiGet('/plant/' + window.plid);
+    } catch (error) {
+      this.displayMessage(error.message, type='error')
+    }
 
     function updateModel(model, newData) {
       for (let key in newData) {
@@ -32,7 +39,7 @@ export default {
       }
     }
 
-    const sse = new EventSource('//fab.rlab.ru:9000/sse/1');
+    const sse = new EventSource('//fab.rlab.ru:9000/sse/' + window.plid);
     sse.onmessage = event => {
         console.log('%c Event received:', 'color: green');
         console.log(event)
@@ -49,6 +56,7 @@ export default {
 	}
 
     }
+    
 
     /*
     let pn = 1

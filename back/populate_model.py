@@ -40,6 +40,8 @@ def jbodgen(i: int) -> Jbod:
 def plantgen(pid: int) -> Plant:
     return Plant(
         pk = pid,
-        owner='Owner with a stool', 
-        jbods={str(i): jbodgen(i) for i in range(JBODS_PER_PLANT)}
+        testoptions = {1: 'Proper test', 2: 'Solid test', 3: 'Precise test'},
+        chosentest = 1, 
+        name = 'Relaible drives Inc.', 
+        jbods = {str(i): jbodgen(i) for i in range(JBODS_PER_PLANT)}
     )
