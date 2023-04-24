@@ -171,7 +171,7 @@ async def getJbodStat(plid: str, jbod_idx: str):
     try:
         stat_json = await r.hget(f'{s.REDIS_JBOD_STAT_KEY_PREFIX}:{plid}', jbod_idx)
     except NotFoundError:
-        raise HTTPException(status_code=404, detail=f'No jbod stat for {plid}/{jbod_idx} found')
+        stat_json = f'So far there is no statistic for jbod {jbod_idx} at {plid}'
     return JSONResponse(content=stat_json)
 
 
@@ -180,7 +180,7 @@ async def getDutInfo(plid: str, jbod_idx: str, slot_idx: str):
     try:
         info_json = await r.hget(f'{s.REDIS_DUT_INFO_KEY_PREFIX}:{plid}', f'{jbod_idx}:{slot_idx}')
     except NotFoundError:
-        raise HTTPException(status_code=404, detail=f'No dut info for {plid}/{jbod_idx}/{slot_idx} found')
+        info_json = f'There is no additional information for the slot {plid}/{jbod_idx}/{slot_idx}'
     return JSONResponse(content=info_json)
 
 

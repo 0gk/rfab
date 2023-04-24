@@ -44,7 +44,7 @@ export default {
       }
     },
     jbodTitle() {
-      return `(${this.model.idx}) WWN: ${this.model.wwn0}:${this.model.wwn1} Model: ${this.model.mdl} S/N: ${this.model.sn}`
+      return `[${(this.model.idx < 10 ? '0' : '') + this.model.idx}] WWN: ${this.model.wwn0}:${this.model.wwn1} Model: ${this.model.mdl} S/N: ${this.model.sn}`
     },
   },
 

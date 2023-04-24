@@ -21,7 +21,7 @@ export default {
 
 <template>
   <div class="slot" :class="{'slot-selected': isSelected}">
-      <div class="row1">({{model.idx}})&nbsp;{{model.sn}}&nbsp;|&nbsp;{{model.mdl}}</div>
+      <div class="row1">({{(model.idx < 10 ? '0' : '') + model.idx}})&nbsp;{{model.sn}}&nbsp;|&nbsp;{{model.mdl}}</div>
       <div class="row2">{{model.status}}</div>
       <div class="row3">
         <div class="col">State: {{model.state}}</div>
