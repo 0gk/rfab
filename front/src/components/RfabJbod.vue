@@ -24,7 +24,7 @@ export default {
   data() {
     return {
       selectedSlotsIdx: new Set(), 
-      isSelectModeOn: false,
+      isМultiSelectModeOn: false,
       dutinfo: null,
       jbodstat: null,
       actionsList: [
@@ -50,8 +50,13 @@ export default {
 
   methods: {
 
+    cearSelection() {
+      this.selectedSlotsIdx.clear();
+      this.dutinfo = null;
+    },
+
     async onClickSlot(idx) {
-      if (this.isSelectModeOn) {
+      if (this.isМultiSelectModeOn) {
 
         if (this.selectedSlotsIdx.has(idx)) {
           this.selectedSlotsIdx.delete(idx);
@@ -62,10 +67,9 @@ export default {
       } else {
 
         if (this.selectedSlotsIdx.has(idx)) {
-	  this.selectedSlotsIdx.clear();
-          this.dutinfo = null;
+	  this.cearSelection();
         } else {
-	  this.selectedSlotsIdx.clear();
+	  this.cearSelection();
           this.selectedSlotsIdx.add(idx);
           this.dutinfo = 'Loading ...';
           try {
@@ -92,8 +96,7 @@ export default {
     },
 
     onSelectModeChange() {
-      this.selectedSlotsIdx.clear()
-      this.dutinfo = null
+      this.cearSelection();
     },
 
     async sendAction() {
@@ -101,7 +104,7 @@ export default {
         await apiPost('/action/' + window.plid, {action: this.chosenAction, data: { [this.model.idx]: Array.from(this.selectedSlotsIdx) } })
         this.displayMessage(`Action "${this.chosenAction}" was sent`, 'success');
         this.chosenAction = null;
-        this.selectedSlotsIdx = new Set();
+        this.cearSelection();
       } catch (error) {
         this.displayMessage(`${error.message} while trying to dispatch action "${this.chosenAction}"`, 'error');
       }
@@ -123,7 +126,7 @@ export default {
 	  </div>
 	  <div class="controls">
 	    <div class="switch">
-	      <el-switch v-model="isSelectModeOn" @change="onSelectModeChange" />
+	      <el-switch v-model="isМultiSelectModeOn" @change="onSelectModeChange" />
 	    </div>
 	    <div class="select">
 	      <el-select v-model="chosenAction" class="m-2" placeholder="Action">
