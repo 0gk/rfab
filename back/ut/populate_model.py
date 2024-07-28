@@ -1,7 +1,13 @@
 import random
 import string
+import sys
+import asyncio
 
-from rmodels import Plant, Jbod, Slot
+sys.path.append('/home/fab/fab/back/')
+
+import config
+from pymodels import Plant, Jbod, Slot
+from rdb import r, rInit
 
 JBODS_PER_PLANT = 5
 SLOTS_PER_JBOD = 16 
@@ -17,7 +23,7 @@ def slotgen(i: int) -> Slot:
         mdl = 'MD' + ''.join((random.choice(string.ascii_uppercase) for i in range(4))) + ''.join((random.choice(string.digits) for i in range(20))),
         sn = ''.join((random.choice(string.hexdigits) for i in range(20))),
         itf = Slot.Interface.SAS,
-        link = 100500,
+        link = '100500',
         grade = Slot.Grade.HIGH,
     )  
 
@@ -45,3 +51,15 @@ def plantgen(pid: int) -> Plant:
         name = 'Relaible drives Inc.', 
         jbods = {str(i): jbodgen(i) for i in range(JBODS_PER_PLANT)}
     )
+
+
+async def aaddplant(plid: int):
+    plant = plantgen(plid)
+    r = await rInit() 
+    await r.set(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}', plant.model_dump_json())
+
+def addplant(plid: int):
+    asyncio.run(aaddplant(plid))
+
+
+

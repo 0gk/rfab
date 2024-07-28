@@ -1,12 +1,12 @@
 import redis.asyncio as redis
-import settings as s
+import config 
 
 r = None
 
 def rInit():
     return redis.Redis(
-        host=s.REIDS_HOST,
-        port=s.REIDS_PORT,
+        host=config.REIDS_HOST,
+        port=config.REIDS_PORT,
         db=0,
         decode_responses=True
     )

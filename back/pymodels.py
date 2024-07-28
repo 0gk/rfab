@@ -1,10 +1,8 @@
 from typing import Optional, Dict 
 from enum import Enum
-from abc import ABC
 
-from redis_om import get_redis_connection, EmbeddedJsonModel, JsonModel, Field, Migrator
+from pydantic import BaseModel, ConfigDict, constr
 
-import settings as s
 from rdb import r
 
 #redis = get_redis_connection(
@@ -14,22 +12,12 @@ from rdb import r
 #    #decode_responses=True,
 #)
 
-
-class BaseJsonModel(JsonModel, ABC):
-    class Meta:
-        global_key_prefix = s.REDIS_RFAB_GLOBAL_KEY_PREFIX
-        database = r
-
-    # Cant hide pk from responce  through "class Config fields" because bug when get models from DB appiars - the key in the model received does not match the key in the database. Seems just new key generated each time. 
-
-
-class BaseEmbeddedJsonModel(EmbeddedJsonModel, ABC):
-    class Config:
-        fields = {'pk': {'exclude': True},}
+class PyBaseModel(BaseModel):
+    pass
 
 # = STATE =============================================
 
-class Slot(BaseEmbeddedJsonModel):
+class Slot(PyBaseModel):
 
     class State(Enum):
         NA = 0
@@ -67,7 +55,7 @@ class Slot(BaseEmbeddedJsonModel):
     grade: Grade 
 
 
-class Jbod(BaseEmbeddedJsonModel):
+class Jbod(PyBaseModel):
 
     class State(Enum):
         NA = 0
@@ -90,17 +78,9 @@ class Jbod(BaseEmbeddedJsonModel):
         return f'{self.wwn0}:{self.wwn1}'
 
 
-class Plant(BaseJsonModel):
+class Plant(PyBaseModel):
     name: Optional[str]
     testoptions: Dict[int, str]
     chosentest: int
     jbods: Optional[Dict[str, Jbod]]
 
-    class Config:
-        fields = {'pk': {'default:': None},}
-
-    class Meta:
-        model_key_prefix = s.REDIS_OM_PLANT_MODEL_KEY_PREFIX 
-
-
-Migrator().run()
