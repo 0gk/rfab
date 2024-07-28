@@ -46,7 +46,7 @@ def jbodgen(i: int) -> Jbod:
 def plantgen(pid: int) -> Plant:
     return Plant(
         pk = pid,
-        testoptions = {1: 'Proper test', 2: 'Solid test', 3: 'Precise test'},
+        testoptions = {"1": 'Proper test', "2": 'Solid test', "3": 'Precise test'},
         chosentest = 1, 
         name = 'Relaible drives Inc.', 
         jbods = {str(i): jbodgen(i) for i in range(JBODS_PER_PLANT)}
@@ -58,8 +58,10 @@ async def aaddplant(plid: int):
     r = await rInit() 
     await r.set(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}', plant.model_dump_json())
 
+
 def addplant(plid: int):
     asyncio.run(aaddplant(plid))
 
 
-
+if __name__ == "__main__":
+    addplant(1)

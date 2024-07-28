@@ -2,7 +2,7 @@ from typing import Union, Dict, Any, Annotated
 import asyncio
 import json 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -76,17 +76,26 @@ async def frontendUpdater(plid: str, request: Request):
 
 # https://fastapi.tiangolo.com/tutorial/body-updates/#partial-updates-with-patch
 # Pydantic model.copy(update=update_data) don't support nested models
-def updateModel(model: Union[Plant, Jbod, Slot], newData: Dict[str, Any]):
+def updateModel(model: Union[Plant, Jbod, Slot, Dict], newData: Dict[str, Any]):
     for key in newData:
         if isinstance(newData[key], dict):
             if isinstance(model, dict):
+                if not key in model:
+                    raise RfabIncorrectDataFormat(f'Attempting to set a value for a non-existent model attribute {key}')
                 updateModel(model[key], newData[key])
             else:
+                if not hasattr(model, key):
+                    raise RfabIncorrectDataFormat(f'Attempting to set a value for a non-existent model attribute {key}')
                 updateModel(getattr(model, key), newData[key])
         else:
-            if not hasattr(model, key):
-                raise RfabIncorrectDataFormat(f'Attempting to set a value for a non-existent model attribute {key}')
-            setattr(model, key, newData[key])
+            if isinstance(model, dict):
+                if not key in model:
+                    raise RfabIncorrectDataFormat(f'Attempting to set a value for a non-existent model attribute {key}')
+                model[key] = newData[key]
+            else:
+                if not hasattr(model, key):
+                    raise RfabIncorrectDataFormat(f'Attempting to set a value for a non-existent model attribute {key}')
+                setattr(model, key, newData[key])
 
 
 # Updates model based on redis channel updates
@@ -95,7 +104,8 @@ async def modelUpdater(chNamePattern: str):
         try:
             plid = chName.split(':')[-1]
             if newData['type'] == 'state':
-                await r.set(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}', newData['data'])
+                plant = Plant.model_validate(newData['data'])
+                await r.set(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}', plant.model_dump_json())
             elif newData['type'] == 'update':
                 plant_json = await r.get(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}')
                 if not plant_json:
@@ -116,9 +126,11 @@ async def modelUpdater(chNamePattern: str):
                 raise RfabIncorrectDataFormat('Incorrect data type')
 
         except RfabIncorrectDataFormat as em:
-            await logErr(f'{em}')
+            await logErr(f'modelUpdater: {em}')
         except KeyError as em:
-            await logErr(f'No key {em} in message found')
+            await logErr(f'modelUpdater: No key {em} in message found')
+        except ValidationError as em:
+            await logErr(f'modelUpdater: {em}')
 
 
 # === STARTUP AND SHUTDOWN ============================================

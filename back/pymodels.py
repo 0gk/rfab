@@ -80,7 +80,7 @@ class Jbod(PyBaseModel):
 
 class Plant(PyBaseModel):
     name: Optional[str]
-    testoptions: Dict[int, str]
+    testoptions: Dict[str, str]
     chosentest: int
     jbods: Optional[Dict[str, Jbod]]
 
