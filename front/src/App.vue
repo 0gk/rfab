@@ -1,5 +1,5 @@
 <script>
-import {apiGet} from './api.js'
+import {apiGet, baseApiUrl} from './api.js'
 import RfabPlant from './components/RfabPlant.vue'
 
 export default {
@@ -39,7 +39,7 @@ export default {
       }
     }
 
-    const sse = new EventSource('//fab.rlab.ru:9000/sse/' + window.plid);
+    const sse = new EventSource(`${baseApiUrl}/sse/${window.plid}`);
     sse.onmessage = event => {
         console.log('%c Event received:', 'color: green');
         console.log(event)

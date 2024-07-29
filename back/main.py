@@ -5,7 +5,7 @@ import json
 from pydantic import BaseModel, ValidationError
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sse_starlette.sse import EventSourceResponse
 
 from pymodels import Plant, Jbod, Slot 
@@ -68,7 +68,7 @@ async def preader(chNamePattern: str):
 async def frontendUpdater(plid: str, request: Request):
     counter = 0
     async for updateData in reader(f'{config.REDIS_PLANT_UPDATE_CH_PREFIX}:{plid}'):
-        if asyncio.run(request.is_disconnected()):
+        if await request.is_disconnected():
             break
         counter += 1
         yield {'event': 'message', 'data': json.dumps({'type': updateData['type'], 'data': updateData['data']}), 'id': counter}
@@ -167,7 +167,7 @@ async def getPlant(plid: str):
     plant_json = await r.get(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}')
     if not plant_json:
         raise HTTPException(status_code=404, detail=f'No plant {plid=} found')
-    return JSONResponse(content=plant_json)
+    return Response(content=plant_json, media_type="application/json")
 
 
 @app.get('/sse/{plid}')

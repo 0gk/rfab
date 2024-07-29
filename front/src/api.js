@@ -1,8 +1,9 @@
 import axios from 'axios'
 
+export const baseApiUrl = `${location.protocol}//${location.hostname}:9000`;
 
 const server = axios.create({
-        baseURL: 'http://fab.rlab.ru:9000',
+	baseURL: baseApiUrl,
         timeout: 10000,
     });
 
