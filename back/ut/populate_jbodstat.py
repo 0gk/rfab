@@ -1,7 +1,7 @@
 import asyncio
 import sys
 
-sys.path.append('/home/fab/fab/back/')
+sys.path.append('/home/fab/rfab/back/')
 
 import config 
 from rdb import rInit
