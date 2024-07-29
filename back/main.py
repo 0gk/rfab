@@ -6,6 +6,7 @@ from pydantic import BaseModel, ValidationError
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 
 from pymodels import Plant, Jbod, Slot 
@@ -157,11 +158,6 @@ async def shutdown():
 # === ROUTES =============================================
 
 
-@app.get('/')
-async def root():
-    return {'message': 'What are you fumbling around here?'}
-
-
 @app.get('/plant/{plid}') 
 async def getPlant(plid: str):
     plant_json = await r.get(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}')
@@ -209,3 +205,6 @@ async def publish(update: ModelUpdate, request: Request):
     update = await request.body()
     await r.publish(f'{config.REDIS_PLANT_UPDATE_CH_PREFIX}:1', update)
     return '-> published' 
+
+
+app.mount('/', StaticFiles(directory='../front/dist/', html=True), name='front')
