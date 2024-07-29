@@ -1,8 +1,7 @@
 import json 
 import time
 
-#import redis
-import redis.asyncio as redis
+import redis
 
 r = redis.Redis()
 
