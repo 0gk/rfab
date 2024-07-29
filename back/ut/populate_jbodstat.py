@@ -1,6 +1,9 @@
 import asyncio
+import sys
 
-import settings as s
+sys.path.append('/home/fab/fab/back/')
+
+import config 
 from rdb import rInit
 
 
@@ -16,7 +19,7 @@ max_jbod_idx = 5
 
 async def statgen(plid):
     for jbod_idx in range(max_jbod_idx):
-        await r.hset(f'{s.REDIS_JBOD_STAT_KEY_PREFIX:}:{plid}', f'{jbod_idx}', sample)
+        await r.hset(f'{config.REDIS_JBOD_STAT_KEY_PREFIX:}:{plid}', f'{jbod_idx}', sample)
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(statgen(1))
