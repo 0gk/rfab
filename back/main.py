@@ -45,7 +45,7 @@ async def reader(chName: str):
     async with r.pubsub() as pubsub:
         await pubsub.subscribe(chName,)
         while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True)
+            message = await pubsub.get_message(timeout=None, ignore_subscribe_messages=True)
             if message is not None:
                 try:
                     yield json.loads(message['data'])
@@ -58,7 +58,7 @@ async def preader(chNamePattern: str):
     async with r.pubsub() as pubsub:
         await pubsub.psubscribe(chNamePattern,)
         while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True)
+            message = await pubsub.get_message(timeout=None, ignore_subscribe_messages=True)
             if message is not None:
                 try:
                     yield message['channel'], json.loads(message['data'])
