@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export const baseApiUrl = `${location.protocol}//${location.hostname}:9000`;
+export const baseApiUrl = `${location.protocol}//${location.hostname}:1406`;
 
 const server = axios.create({
 	baseURL: baseApiUrl,

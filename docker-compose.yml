@@ -1,0 +1,24 @@
+services:
+  rfab:
+    image: rfab
+    container_name: rfab-app 
+    hostname: rfab-app
+    restart: always
+    ports:
+      - "1406:1406"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=rfab-redis
+      - REDIS_PORT=6379
+
+  redis:
+    image: "redis:alpine"
+    container_name: rfab-redis 
+    hostname: rfab-redis
+    ports:
+      - "6379:6379"
+
+networks:
+  rfab:
+    driver: bridge

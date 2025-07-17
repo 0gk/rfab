@@ -1,6 +1,7 @@
 from typing import Union, Dict, Any, Annotated
 import asyncio
 import json 
+import os
 
 from pydantic import BaseModel, ValidationError
 from fastapi import FastAPI, HTTPException, Request
@@ -12,7 +13,7 @@ from sse_starlette.sse import EventSourceResponse
 from pymodels import Plant, Jbod, Slot 
 from rdb import r, rInit
 from exceptions import RfabIncorrectDataFormat
-import config 
+from config import settings 
 
 app = FastAPI()
 
@@ -32,12 +33,12 @@ app.add_middleware(
 
 async def logErr(msg):
     print(f'ERROR: {msg}')
-    await r.publish(config.REDIS_ERROR_CH_NAME, f'ERROR: {msg}')
+    await r.publish(settings.REDIS_ERROR_CH_NAME, f'ERROR: {msg}')
 
 
 async def log(msg):
     print(msg)
-    await r.publish(config.REDIS_LOG_CH_NAME, f'{msg}')
+    await r.publish(settings.REDIS_LOG_CH_NAME, f'{msg}')
 
 
 # Async reader from redis channel
@@ -68,7 +69,7 @@ async def preader(chNamePattern: str):
 
 async def frontendUpdater(plid: str, request: Request):
     counter = 0
-    async for updateData in reader(f'{config.REDIS_PLANT_UPDATE_CH_PREFIX}:{plid}'):
+    async for updateData in reader(f'{settings.REDIS_PLANT_UPDATE_CH_PREFIX}:{plid}'):
         if await request.is_disconnected():
             break
         counter += 1
@@ -106,23 +107,23 @@ async def modelUpdater(chNamePattern: str):
             plid = chName.split(':')[-1]
             if newData['type'] == 'state':
                 plant = Plant.model_validate(newData['data'])
-                await r.set(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}', plant.model_dump_json())
+                await r.set(f'{settings.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}', plant.model_dump_json())
             elif newData['type'] == 'update':
-                plant_json = await r.get(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}')
+                plant_json = await r.get(f'{settings.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}')
                 if not plant_json:
                     raise RfabIncorrectDataFormat(f'Appropriate plant for cannel {chName=} {plid=} not found in DB')
                 plant = Plant.model_validate_json(plant_json)
                 updateModel(plant, newData['data'])
-                await r.set(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}', plant.model_dump_json())
+                await r.set(f'{settings.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}', plant.model_dump_json())
             elif newData['type'] == 'jbodstat':
                 for jbod_idx in newData['data']:
                     jbodstat_str = json.dumps(newData['data'][jbod_idx])
-                    await r.hset(f'{config.REDIS_JBOD_STAT_KEY_PREFIX}:{plid}', jbod_idx, jbodstat_str)
+                    await r.hset(f'{settings.REDIS_JBOD_STAT_KEY_PREFIX}:{plid}', jbod_idx, jbodstat_str)
             elif newData['type'] == 'dutinfo':
                 for jbod_idx in newData['data']:
                     for slot_idx in newData['data'][jbod_idx]:
                         dutinfo_str = json.dumps(newData['data'][jbod_idx][slot_idx])
-                        await r.hset(f'{config.REDIS_DUT_INFO_KEY_PREFIX}:{plid}', f'{jbod_idx}:{slot_idx}', dutinfo_str)
+                        await r.hset(f'{settings.REDIS_DUT_INFO_KEY_PREFIX}:{plid}', f'{jbod_idx}:{slot_idx}', dutinfo_str)
             else:
                 raise RfabIncorrectDataFormat('Incorrect data type')
 
@@ -143,7 +144,7 @@ async def startup():
     r = await rInit() 
 
     # Run update state from channels
-    asyncio.create_task(modelUpdater(config.REDIS_PLANT_UPDATE_CH_PREFIX + '*'))
+    asyncio.create_task(modelUpdater(settings.REDIS_PLANT_UPDATE_CH_PREFIX + '*'))
 
     await log('STARTED')
 
@@ -160,7 +161,7 @@ async def shutdown():
 
 @app.get('/plant/{plid}') 
 async def getPlant(plid: str):
-    plant_json = await r.get(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}')
+    plant_json = await r.get(f'{settings.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}')
     if not plant_json:
         raise HTTPException(status_code=404, detail=f'No plant {plid=} found')
     return Response(content=plant_json, media_type="application/json")
@@ -173,7 +174,7 @@ async def sse(plid: str, request: Request):
 
 @app.get('/jbodstat/{plid}/{jbod_idx}')
 async def getJbodStat(plid: str, jbod_idx: str):
-    stat_json = await r.hget(f'{config.REDIS_JBOD_STAT_KEY_PREFIX}:{plid}', jbod_idx)
+    stat_json = await r.hget(f'{settings.REDIS_JBOD_STAT_KEY_PREFIX}:{plid}', jbod_idx)
     if not stat_json:
         stat_json = f'So far there is no statistic for jbod {jbod_idx} at {plid}'
     return JSONResponse(content=stat_json)
@@ -181,7 +182,7 @@ async def getJbodStat(plid: str, jbod_idx: str):
 
 @app.get('/dutinfo/{plid}/{jbod_idx}/{slot_idx}')
 async def getDutInfo(plid: str, jbod_idx: str, slot_idx: str):
-    info_json = await r.hget(f'{config.REDIS_DUT_INFO_KEY_PREFIX}:{plid}', f'{jbod_idx}:{slot_idx}')
+    info_json = await r.hget(f'{settings.REDIS_DUT_INFO_KEY_PREFIX}:{plid}', f'{jbod_idx}:{slot_idx}')
     if not info_json:
         info_json = f'There is no additional information for the slot {plid}/{jbod_idx}/{slot_idx}'
     return JSONResponse(content=info_json)
@@ -190,7 +191,7 @@ async def getDutInfo(plid: str, jbod_idx: str, slot_idx: str):
 @app.post('/action/{plid}')
 async def publish(plid: str, request: Request):
     action = await request.body()
-    await r.publish(f'{config.REDIS_ACTION_CH_PREFIX}:{plid}', action)
+    await r.publish(f'{settings.REDIS_ACTION_CH_PREFIX}:{plid}', action)
     return 'Action requested' 
 
 
@@ -203,8 +204,7 @@ class ModelUpdate(BaseModel):
 @app.post('/publish')
 async def publish(update: ModelUpdate, request: Request):
     update = await request.body()
-    await r.publish(f'{config.REDIS_PLANT_UPDATE_CH_PREFIX}:1', update)
+    await r.publish(f'{settings.REDIS_PLANT_UPDATE_CH_PREFIX}:1', update)
     return '-> published' 
 
-
-app.mount('/', StaticFiles(directory='../front/dist/', html=True), name='front')
+app.mount('/', StaticFiles(directory=settings.STATIC_ROOT, html=True), name='front')
