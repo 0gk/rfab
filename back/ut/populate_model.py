@@ -5,7 +5,7 @@ import asyncio
 
 sys.path.append('/home/web/rfab/back/')
 
-import config
+from config import settings
 from pymodels import Plant, Jbod, Slot
 from rdb import r, rInit
 
@@ -56,7 +56,7 @@ def plantgen(pid: int) -> Plant:
 async def aaddplant(plid: int):
     plant = plantgen(plid)
     r = await rInit() 
-    await r.set(f'{config.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}', plant.model_dump_json())
+    await r.set(f'{settings.REDIS_PLANT_MODEL_KEY_PREFIX}:{plid}', plant.model_dump_json())
 
 
 def addplant(plid: int):

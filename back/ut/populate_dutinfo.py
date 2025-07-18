@@ -3,7 +3,7 @@ import sys
 
 sys.path.append('/home/web/rfab/back/')
 
-import config 
+from config import settings
 from rdb import rInit
 
 
@@ -30,7 +30,7 @@ max_slot_idx = 20
 async def dutgen(plid):
     for jbod_idx in range(max_jbod_idx):
         for slot_idx in range(max_slot_idx):
-            await r.hset(f'{config.REDIS_DUT_INFO_KEY_PREFIX}:{plid}', f'{jbod_idx}:{slot_idx}', sample)
+            await r.hset(f'{settings.REDIS_DUT_INFO_KEY_PREFIX}:{plid}', f'{jbod_idx}:{slot_idx}', sample)
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(dutgen(1))

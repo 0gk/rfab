@@ -1,6 +1,6 @@
 services:
   rfab:
-    image: rfab
+    image: "00gk/rfab:latest" 
     container_name: rfab-app 
     hostname: rfab-app
     restart: always
